@@ -13,14 +13,16 @@ Cleaning logic:
 
 import asyncio
 import json
+import logging
 import re
-import sys
 from pathlib import Path
 from typing import Optional
 
 import aiohttp
 
 from sources.base import ArtworkRow, MuseumSource
+
+log = logging.getLogger(__name__)
 
 BROWSE_URL = "https://harvardartmuseums.org/browse"
 CONCURRENCY = 10
@@ -40,15 +42,14 @@ class HarvardSource(MuseumSource):
 
     def fetch_all(self, use_cache: bool = True) -> list[dict]:
         if use_cache and CACHE_FILE.exists():
-            print(f"Loading cached Harvard data from {CACHE_FILE}…")
+            log.info("Loading cached Harvard data from %s", CACHE_FILE)
             return json.loads(CACHE_FILE.read_text())
 
-        print("Fetching all records from Harvard Art Museums (async)…")
+        log.info("Fetching all records from Harvard Art Museums (async)…")
         records = asyncio.run(self._fetch_async())
 
-        # Dedupe before caching
         deduped = list({r["id"]: r for r in records}.values())
-        print(f"Fetched {len(records):,} records → {len(deduped):,} after id-dedup → caching")
+        log.info("Fetched %s records → %s after id-dedup → caching", f"{len(records):,}", f"{len(deduped):,}")
         CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
         CACHE_FILE.write_text(json.dumps(deduped))
         return deduped
@@ -64,7 +65,7 @@ class HarvardSource(MuseumSource):
             meta = first.get("info", {})
             n_pages: int = meta.get("pages", 1)
             total: int = meta.get("totalrecords", 0)
-            print(f"  {total:,} objects across {n_pages:,} pages")
+            log.info("%s objects across %s pages", f"{total:,}", f"{n_pages:,}")
             records.extend(first.get("records", []))
 
             async def task(offset: int) -> None:
@@ -78,7 +79,7 @@ class HarvardSource(MuseumSource):
                 await coro
                 done += 1
                 if done % 200 == 0:
-                    print(f"  {done:,}/{n_pages - 1:,} pages fetched…")
+                    log.info("%s/%s pages fetched…", f"{done:,}", f"{n_pages - 1:,}")
 
         return records
 
@@ -89,7 +90,7 @@ class HarvardSource(MuseumSource):
             ) as resp:
                 return await resp.json(content_type=None)
         except Exception as exc:
-            print(f"  [harvard] offset={offset}: {exc}", file=sys.stderr)
+            log.warning("Page fetch failed at offset=%d: %s", offset, exc)
             return {}
 
     def clean(self, raw: list[dict]) -> list[ArtworkRow]:

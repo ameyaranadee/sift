@@ -1,4 +1,5 @@
 import base64
+import logging
 from typing import Optional
 
 import httpx
@@ -6,6 +7,8 @@ from google import genai
 from google.genai import types
 
 from config import GOOGLE_CLOUD_PROJECT, GOOGLE_CLOUD_LOCATION, GEMINI_EMBEDDING_MODEL, IIIF_MAX_DIM
+
+log = logging.getLogger(__name__)
 
 _client = genai.Client(
     vertexai=True,
@@ -28,7 +31,8 @@ def _fetch_image(url: str) -> Optional[bytes]:
         resp = httpx.get(url, timeout=20, follow_redirects=True)
         resp.raise_for_status()
         return resp.content
-    except Exception:
+    except Exception as exc:
+        log.debug("Image fetch failed for %s: %s", url, exc)
         return None
 
 
@@ -94,7 +98,7 @@ def embed_artwork(row: dict) -> Optional[list[float]]:
         )
         return response.embeddings[0].values
     except Exception as exc:
-        print(f"  [embedder] failed for id={row.get('id')}: {exc}")
+        log.warning("embed_artwork failed for id=%s: %s", row.get("id"), exc)
         return None
 
 
@@ -109,7 +113,7 @@ def embed_query(query_text: str) -> Optional[list[float]]:
         )
         return response.embeddings[0].values
     except Exception as exc:
-        print(f"  [embedder] query failed: {exc}")
+        log.error("embed_query failed: %s", exc)
         return None
 
 
@@ -132,5 +136,5 @@ def embed_image_query(image_bytes: bytes, mime_type: str = "image/jpeg") -> Opti
         )
         return response.embeddings[0].values
     except Exception as exc:
-        print(f"  [embedder] image query failed: {exc}")
+        log.error("embed_image_query failed: %s", exc)
         return None

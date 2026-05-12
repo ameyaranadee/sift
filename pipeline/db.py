@@ -1,8 +1,9 @@
-from pathlib import Path
+import logging
 from supabase import create_client, Client
 
 from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 
+log = logging.getLogger(__name__)
 _client: Client | None = None
 
 
@@ -17,7 +18,11 @@ def upsert_artworks(rows: list[dict]) -> None:
     client = get_client()
     batch_size = 50  # ~5MB payload cap per Supabase REST request
     for i in range(0, len(rows), batch_size):
-        client.table("artworks").upsert(rows[i : i + batch_size], on_conflict="id").execute()
+        batch = rows[i : i + batch_size]
+        try:
+            client.table("artworks").upsert(batch, on_conflict="id").execute()
+        except Exception as exc:
+            log.error("upsert failed for batch starting at %d: %s", i, exc)
 
 
 def already_embedded_ids() -> set[int]:
