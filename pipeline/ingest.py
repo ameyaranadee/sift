@@ -49,9 +49,8 @@ def setup_logging(source_name: str) -> logging.Logger:
     root.addHandler(console_handler)
 
     # Suppress noisy third-party loggers
-    logging.getLogger("httpx").setLevel(logging.WARNING)
-    logging.getLogger("google").setLevel(logging.WARNING)
-    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    for name in ("httpx", "httpcore", "google", "urllib3", "hpack"):
+        logging.getLogger(name).setLevel(logging.WARNING)
 
     logger = logging.getLogger("ingest")
     logger.info("Logging to %s", log_file)

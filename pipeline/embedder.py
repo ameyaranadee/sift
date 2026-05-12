@@ -1,5 +1,6 @@
 import base64
 import logging
+import time
 from typing import Optional
 
 import httpx
@@ -28,7 +29,7 @@ def _image_url(base_url: str) -> str:
 
 def _fetch_image(url: str) -> Optional[bytes]:
     try:
-        resp = httpx.get(url, timeout=20, follow_redirects=True)
+        resp = httpx.get(url, timeout=5, follow_redirects=True)
         resp.raise_for_status()
         return resp.content
     except Exception as exc:
@@ -91,15 +92,20 @@ def embed_artwork(row: dict) -> Optional[list[float]]:
 
     content_parts.append(types.Part(text=text))
 
-    try:
-        response = _client.models.embed_content(
-            model=GEMINI_EMBEDDING_MODEL,
-            contents=types.Content(parts=content_parts),
-        )
-        return response.embeddings[0].values
-    except Exception as exc:
-        log.warning("embed_artwork failed for id=%s: %s", row.get("id"), exc)
-        return None
+    for attempt in range(3):
+        try:
+            response = _client.models.embed_content(
+                model=GEMINI_EMBEDDING_MODEL,
+                contents=types.Content(parts=content_parts),
+            )
+            return response.embeddings[0].values
+        except Exception as exc:
+            if attempt < 2:
+                log.debug("embed_artwork retry %d for id=%s: %s", attempt + 1, row.get("id"), exc)
+                time.sleep(2 ** attempt)
+            else:
+                log.warning("embed_artwork failed for id=%s: %s", row.get("id"), exc)
+    return None
 
 
 def embed_query(query_text: str) -> Optional[list[float]]:
