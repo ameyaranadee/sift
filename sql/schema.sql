@@ -76,6 +76,34 @@ CREATE TRIGGER artworks_updated_at
     BEFORE UPDATE ON artworks
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+-- Random artwork sampler — used for the home page discovery grid.
+-- ORDER BY RANDOM() is fine at ~40k rows; revisit with tablesample if the table grows large.
+CREATE OR REPLACE FUNCTION random_artworks(count INT DEFAULT 20)
+RETURNS TABLE (
+    id BIGINT,
+    title TEXT,
+    artist_name TEXT,
+    culture TEXT,
+    division TEXT,
+    dated TEXT,
+    century TEXT,
+    medium TEXT,
+    classification TEXT,
+    primary_image_url TEXT,
+    artwork_url TEXT,
+    similarity FLOAT
+)
+LANGUAGE sql AS $$
+    SELECT
+        id, title, artist_name, culture, division, dated, century, medium,
+        classification, primary_image_url, artwork_url,
+        0.0::FLOAT AS similarity
+    FROM artworks
+    WHERE primary_image_url IS NOT NULL
+    ORDER BY RANDOM()
+    LIMIT count;
+$$;
+
 -- Similarity search function (returns matches above threshold, filtered by metadata).
 -- Casts both sides to halfvec(3072) so the query uses the HNSW index.
 CREATE OR REPLACE FUNCTION search_artworks(

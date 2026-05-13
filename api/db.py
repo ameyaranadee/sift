@@ -37,6 +37,12 @@ def get_artwork(artwork_id: int) -> dict | None:
     return data[0] if data else None
 
 
+def get_random_artworks(count: int = 20) -> list[dict]:
+    client = get_client()
+    resp = client.rpc("random_artworks", {"count": count}).execute()
+    return resp.data or []
+
+
 def search_artworks(
     embedding: list[float],
     limit: int = 20,
