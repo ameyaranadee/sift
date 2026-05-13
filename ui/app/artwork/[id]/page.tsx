@@ -61,6 +61,7 @@ export default async function ArtworkPage({ params }: { params: Promise<{ id: st
               <img
                 src={artwork.primary_image_url}
                 alt={artwork.title ?? ''}
+                referrerPolicy="no-referrer"
                 className="w-full h-auto"
                 style={{ display: 'block' }}
               />

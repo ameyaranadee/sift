@@ -307,6 +307,7 @@ function ArtworkCard({ artwork }: { artwork: ArtworkResult }) {
         src={artwork.primary_image_url!}
         alt={artwork.title ?? ""}
         loading="lazy"
+        referrerPolicy="no-referrer"
         className="w-full h-auto block"
         style={{ display: "block", transition: "opacity 0.15s" }}
         onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.88")}
