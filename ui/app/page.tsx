@@ -144,7 +144,7 @@ export default function HomePage() {
                 style={{
                   fontFamily: "var(--font-cormorant), Georgia, serif",
                   fontStyle: "italic",
-                  fontSize: "clamp(2.5rem, 5vw, 4.5rem)",
+                  fontSize: "clamp(1.5rem, 7vw, 4.5rem)",
                   color: "#1C1917",
                   lineHeight: 1.1,
                 }}
