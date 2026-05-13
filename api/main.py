@@ -5,7 +5,7 @@ from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from db import get_artwork, search_artworks
+from db import get_artwork, get_random_artworks, search_artworks
 from embedder import embed_image_query, embed_query
 from models import ArtworkDetail, ArtworkResult, SearchResponse
 
@@ -34,6 +34,12 @@ class TextSearchRequest(BaseModel):
     century: Optional[str] = None
     culture: Optional[str] = None
     division: Optional[str] = None
+
+
+@app.get("/artworks/random", response_model=SearchResponse)
+def get_random(limit: int = Query(20, ge=1, le=100)):
+    rows = get_random_artworks(limit)
+    return SearchResponse(results=[ArtworkResult(**r) for r in rows], count=len(rows))
 
 
 @app.get("/artworks/{artwork_id}", response_model=ArtworkDetail)
